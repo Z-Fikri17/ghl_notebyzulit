@@ -130,6 +130,22 @@
     padding:6px 14px;
   }
   .nav-link:hover{ border-color:var(--cyan); }
+
+  .topnav{
+    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+    background:var(--panel); border:1px solid var(--border);
+    border-radius:10px; padding:10px 14px; margin-bottom:18px;
+  }
+  .topnav .navbtn{
+    font-family:var(--mono); font-size:12.5px;
+    color:var(--muted); text-decoration:none;
+    border:1px solid var(--border); border-radius:6px;
+    padding:6px 12px; background:var(--panel-2);
+  }
+  .topnav .navbtn:hover{ color:var(--text); border-color:var(--cyan); }
+  .topnav .navbtn.active{ color:var(--cyan); border-color:var(--cyan); }
+  .topnav .navbtn.back{ color:var(--text); }
+  .topnav .navsep{ width:1px; align-self:stretch; background:var(--border); margin:0 4px; }
 </style>
 </head>
 <body>
@@ -139,6 +155,14 @@
     <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
     <span class="url">merchant.ghlapps.com</span>
   </div>
+
+  <nav class="topnav">
+    <a class="navbtn back" href="index.html">&larr; Back</a>
+    <span class="navsep"></span>
+    <a class="navbtn" href="index.html">GHL Merchant Portal Guide</a>
+    <a class="navbtn active" href="ghl_portal_payouts_notebyzul.html">Blank Store ID / Payouts</a>
+  </nav>
+
   <div class="hero">
     <h1>REVENUE MONSTER MANUAL ADJUSMENT</h1>
     <div class="byline">

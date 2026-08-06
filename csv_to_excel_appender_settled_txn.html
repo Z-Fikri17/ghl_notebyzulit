@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Statement → Excel Appender</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #0f1117;
@@ -218,6 +220,30 @@
     text-align: center;
     padding: 20px 0;
   }
+  .nav-link{
+    display:inline-block; margin-top:14px;
+    font-family:var(--mono); font-size:12.5px;
+    color:var(--cyan); text-decoration:none;
+    border:1px solid var(--border); border-radius:6px;
+    padding:6px 14px;
+  }
+  .nav-link:hover{ border-color:var(--cyan); }
+
+  .topnav{
+    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+    background:var(--panel); border:1px solid var(--border);
+    border-radius:10px; padding:10px 14px; margin-bottom:18px;
+  }
+  .topnav .navbtn{
+    font-family:var(--mono); font-size:12.5px;
+    color:var(--muted); text-decoration:none;
+    border:1px solid var(--border); border-radius:6px;
+    padding:6px 12px; background:var(--panel-2);
+  }
+  .topnav .navbtn:hover{ color:var(--text); border-color:var(--cyan); }
+  .topnav .navbtn.active{ color:var(--cyan); border-color:var(--cyan); }
+  .topnav .navbtn.back{ color:var(--text); }
+  .topnav .navsep{ width:1px; align-self:stretch; background:var(--border); margin:0 4px; }
 </style>
 </head>
 <body>
@@ -229,6 +255,13 @@
 
 <!-- Where the raw files come from -->
 <div class="card" style="border-color:var(--accent)">
+
+   <nav class="topnav">
+    <a class="navbtn back" href="javascript:history.back()">&larr; Back</a>
+    <span class="navsep"></span>
+    <a class="navbtn active" href="index.html">GHL Merchant Portal Guide</a>
+    <a class="navbtn" href="ghl_portal_payouts_notebyzul.html">Blank Store ID / Payouts</a>
+  </nav>
   <h2 style="color:var(--accent)">Where to get your file(s)</h2>
   <div class="path-crumb">
     Raw Data file must come from<br>
