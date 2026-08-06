@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GHL Merchant Portal Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0a0e13;
+    --panel: #10161d;
+    --panel-2: #0d1319;
+    --border: #1e2a35;
+    --text: #e7edf3;
+    --muted: #7d8ea0;
+    --cyan: #2fd9cb;
+    --amber: #f4a637;
+    --green: #3ed98b;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Inter', sans-serif;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:
+      radial-gradient(circle at 12% 8%, rgba(47,217,203,0.06), transparent 40%),
+      radial-gradient(circle at 88% 92%, rgba(244,166,55,0.05), transparent 40%),
+      var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    line-height:1.55;
+    padding:40px 20px 60px;
+  }
+  .poster{ max-width:920px; margin:0 auto; }
+
+  .titlebar{
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    border-radius:10px 10px 0 0;
+    padding:12px 16px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .dot{width:11px; height:11px; border-radius:50%;}
+  .dot.r{background:#ff5f56;} .dot.y{background:#ffbd2e;} .dot.g{background:#27c93f;}
+  .url{
+    margin-left:14px; font-family:var(--mono); font-size:13px; color:var(--muted);
+    background:var(--bg); border:1px solid var(--border); border-radius:6px;
+    padding:5px 12px; flex:1;
+  }
+  .hero{
+    background:var(--panel);
+    border:1px solid var(--border); border-top:none;
+    border-radius:0 0 10px 10px;
+    padding:26px 32px;
+    margin-bottom:32px;
+  }
+  h1{
+    font-family:var(--mono); font-weight:800; font-size:clamp(20px,3.6vw,28px);
+    letter-spacing:-0.01em;
+  }
+  .byline{
+    display:flex; align-items:center; gap:10px;
+    font-family:var(--mono); font-size:12.5px; color:var(--muted);
+    margin-top:14px;
+  }
+  .byline .dot-sep{ opacity:.5; }
+
+  section.card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:28px 30px;
+    margin-bottom:24px;
+  }
+  .sec-head h2{ font-family:var(--mono); font-size:18px; font-weight:700; margin-bottom:16px; }
+
+  .tree{
+    font-family:var(--mono); font-size:13.5px; color:var(--muted);
+    background:var(--panel-2); border:1px solid var(--border); border-radius:8px;
+    padding:14px 18px; margin-bottom:18px; line-height:1.9;
+  }
+  .tree .top{color:var(--text);}
+  .tree .leaf{color:var(--cyan); padding-left:16px;}
+  .path{ font-family:var(--mono); font-size:12px; margin-bottom:16px; line-height:1.8; }
+  .path .parent{ color:var(--muted); }
+  .path .child{ color:var(--cyan); padding-left:16px; }
+
+  .callout{
+    border-left:3px solid var(--amber);
+    background:rgba(244,166,55,0.07);
+    border-radius:0 8px 8px 0;
+    padding:16px 18px;
+  }
+  .callout .tag{
+    font-family:var(--mono); font-size:11px; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--amber); font-weight:700; margin-bottom:8px; display:block;
+  }
+  .callout ul{ padding-left:18px; color:var(--text); font-size:14.5px; }
+  .callout li{ margin-bottom:6px; }
+  .callout li:last-child{ margin-bottom:0; }
+
+  .intro-text{ font-size:14.5px; color:var(--text); margin-bottom:6px; }
+  .intro-text.muted{ color:var(--muted); }
+
+  .chiprow{ display:flex; gap:10px; flex-wrap:wrap; margin:14px 0 18px; }
+  .chip{
+    font-family:var(--mono); font-size:13px; color:var(--cyan);
+    background:var(--panel-2); border:1px solid var(--border);
+    border-radius:20px; padding:7px 16px;
+  }
+
+  .compare{
+    display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:6px;
+  }
+  @media(max-width:640px){ .compare{grid-template-columns:1fr;} }
+  .method{
+    background:var(--panel-2); border:1px solid var(--border); border-radius:10px;
+    padding:20px 20px 22px;
+  }
+  .method h3{ font-family:var(--mono); font-size:15px; margin-bottom:4px; }
+  .method .path{ font-family:var(--mono); font-size:11.5px; color:var(--muted); margin-bottom:14px; }
+  .method p{ font-size:13.5px; margin-bottom:10px; }
+  .method .solution{
+    font-size:13.5px; margin-top:12px; padding-top:12px;
+    border-top:1px dashed var(--border); color:var(--cyan);
+  }
+
+  footer{
+    text-align:center; color:var(--muted); font-family:var(--mono); font-size:11.5px;
+    margin-top:30px;
+  }
+  .nav-link{
+    display:inline-block; margin-top:14px;
+    font-family:var(--mono); font-size:12.5px;
+    color:var(--cyan); text-decoration:none;
+    border:1px solid var(--border); border-radius:6px;
+    padding:6px 14px;
+  }
+  .nav-link:hover{ border-color:var(--cyan); }
+</style>
+</head>
+<body>
+<div class="poster">
+
+  <div class="titlebar">
+    <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+    <span class="url">merchant.ghlapps.com</span>
+  </div>
+  <div class="hero">
+    <h1>E-WALLET - GHL</h1>
+    <p class="intro-text">Check real-time transactions and show monthly settlement reports.</p>
+    <div class="byline">
+      <span>Author: Zul-IT</span>
+      <span class="dot-sep">•</span>
+      <span>Last Updated: 2026-08-06</span>
+    </div>
+  </div>
+
+  <!-- SECTION 1 -->
+  <section class="card">
+    <div class="sec-head">
+      <h2>CHECK REAL-TIME TRANSACTION</h2>
+    </div>
+    <div class="tree">
+      <div class="top">Realtime Txn</div>
+      <div class="leaf">└ Transaction Retrieve</div>
+    </div>
+    <div class="callout">
+      <span class="tag">Reminder</span>
+      <ul>
+        <li>Searching for a specific transaction may result in No Data or no records found even if we put the details correctly, such as transaction ID, amount, and TID.</li>
+        <li>So the solution is to try searching for the specific record with a shorter date range, limited to 2 days.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- SECTION 2 -->
+  <section class="card">
+    <div class="sec-head">
+      <h2>SHOW MONTHLY SETTLEMENT REPORT</h2>
+    </div>
+    <p class="intro-text">You just log in using 1 account to show the settlement report for 3 different account types:</p>
+    <div class="chiprow">
+      <span class="chip">tmsb</span>
+      <span class="chip">express</span>
+      <span class="chip">mart</span>
+    </div>
+    <p class="intro-text muted">There are many ways to show the settlement report, but each method has pros and cons.</p>
+
+    <div class="compare">
+      <!-- Monthly -->
+      <div class="method">
+        <h3>1. Monthly</h3>
+        <div class="path"><div class="parent">Activity Reporting</div><div class="child">└ Settled Transaction</div></div>
+        <p>Analyzing settled transactions monthly is easy, but you will face a difficult incorrect date format issue.</p>
+        <p>For example, the July record will show another month due to an error reading the date, like 01-07-2026, so the Excel program will read it as 07 January 2026.</p>
+        <p>The monthly settlement report will provide 3 different .csv files for 3 different accounts.</p>
+        <p>Online retrieval is limited to the past 6 months' record history.</p>
+        <p>Each transaction record just shows the TID, so it won't show which outlet made the sale. You'll need to download the report from the portal and VLOOKUP it with your TID list.</p>
+        <div class="solution"><a class="nav-link" href="csv_to_excel_appender_settled_txn.html">Solution: Click here to use the program to fix the date format and merge the 3 account types into one Excel file.</a></div>
+      </div>
+
+      <!-- Daily -->
+      <div class="method">
+        <h3>2. Daily</h3>
+        <div class="path"><div class="parent">Activity Reporting</div><div class="child">└ Statement of Account</div></div>
+        <p>Analyzing settled transactions monthly is harder than the previous method, but you will never face the incorrect date format problem.</p>
+        <p>You need to download each day's report day by day. For example, if you want to analyze records for the whole of July 2026, you need to download the daily report 31 times.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    merchant.ghlapps.com<br>
+    <a class="nav-link" href="ghl_portal_payouts_notebyzul.html">Next: Blank Store ID / Payouts →</a>
+  </footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Statement → Excel Appender</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #222636;
+    --border: #2e3350;
+    --accent: #4f8ef7;
+    --accent2: #38e2a0;
+    --warn: #f7c94f;
+    --danger: #f7614f;
+    --text: #e8eaf2;
+    --muted: #7a80a0;
+    --radius: 10px;
+    --font: 'Segoe UI', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    min-height: 100vh;
+    padding: 32px 20px;
+  }
+  header {
+    max-width: 860px;
+    margin: 0 auto 32px;
+  }
+  header h1 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: var(--text);
+  }
+  header h1 span { color: var(--accent); }
+  header p {
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin-top: 6px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    max-width: 860px;
+    margin: 0 auto 20px;
+  }
+  .card h2 {
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+
+  /* Source instructions */
+  .path-crumb {
+    font-family: 'Courier New', monospace;
+    font-size: 0.88rem;
+    line-height: 1.9;
+    color: var(--text);
+    background: #0a0c13;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    margin-top: 10px;
+  }
+  .path-crumb .dim { color: var(--muted); }
+  .path-crumb .hi { color: var(--accent2); }
+
+  /* Drop zones */
+  .drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .drop-zone:hover, .drop-zone.over {
+    border-color: var(--accent);
+    background: rgba(79,142,247,0.06);
+  }
+  .drop-zone input { display: none; }
+  .drop-zone .icon { font-size: 2rem; margin-bottom: 8px; }
+  .drop-zone p { color: var(--muted); font-size: 0.88rem; }
+  .drop-zone p strong { color: var(--text); }
+
+  /* File pills */
+  .file-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+  }
+  .pill {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 0.78rem;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .pill .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--accent2);
+    flex-shrink: 0;
+  }
+  .pill .dot.warn { background: var(--warn); }
+  .pill .dot.err  { background: var(--danger); }
+
+  /* Action row */
+  .action-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 0;
+  }
+  button {
+    padding: 10px 22px;
+    border-radius: 8px;
+    border: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+  }
+  button:active { transform: scale(0.97); }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-success { background: var(--accent2); color: #0f1117; }
+
+  /* Log */
+  .log {
+    background: #0a0c13;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.8rem;
+    max-height: 260px;
+    overflow-y: auto;
+    line-height: 1.7;
+  }
+  .log .line { display: block; }
+  .log .line.ok   { color: var(--accent2); }
+  .log .line.info { color: var(--muted); }
+  .log .line.warn { color: var(--warn); }
+  .log .line.err  { color: var(--danger); }
+  .log .line.head { color: var(--accent); font-weight: bold; }
+
+  /* Sheet summary table */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+  }
+  th {
+    text-align: left;
+    padding: 8px 12px;
+    color: var(--muted);
+    font-weight: 600;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  td {
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+  }
+  tr:last-child td { border-bottom: none; }
+  .badge {
+    display: inline-block;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 2px 8px;
+    font-size: 0.78rem;
+    color: var(--accent2);
+    font-family: monospace;
+  }
+
+  .progress-bar {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-top: 14px;
+    overflow: hidden;
+    display: none;
+  }
+  .progress-bar .fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 2px;
+    width: 0%;
+    transition: width 0.3s;
+  }
+
+  .empty-state {
+    color: var(--muted);
+    font-size: 0.85rem;
+    text-align: center;
+    padding: 20px 0;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Settled Txn <span>→</span> Excel Splitter</h1>
+  <p>Drop in one or more raw <code>settled-txn-&lt;merchantID&gt;-&lt;start&gt;-to-&lt;end&gt;.csv</code> files at once — daily, weekly, or monthly, any number of merchants, mixed freely. Each merchant is split into its own sheet, the category is auto-detected from the date range (no need to pick it), and every <strong>Settlement Date</strong> / <strong>Transaction Time</strong> value is normalised to unambiguous <code>DD-MMM-YYYY HH:MM:SS</code> text (e.g. <code>01-Jul-2026 05:47:10</code>) so nothing can be misread by Excel — even if you later use Text to Columns.</p>
+</header>
+
+<!-- Where the raw files come from -->
+<div class="card" style="border-color:var(--accent)">
+  <h2 style="color:var(--accent)">Where to get your file(s)</h2>
+  <div class="path-crumb">
+    Raw Data file must come from<br>
+    <span class="hi">Activity Reporting</span><br>
+    <span class="dim">└──</span> <span class="hi">Statement of Account</span>
+  </div>
+  <p style="color:var(--muted);font-size:0.82rem;margin-top:10px">
+    Example filename: <code>settled-txn-121300-2026-07-01-to-2026-07-31.csv</code><br>
+    You can select and download several merchants at once from that page — drop them all in below together.
+  </p>
+</div>
+
+<!-- Process: multiple raw files at once -->
+<div class="card" style="border-color:var(--warn)">
+  <h2 style="color:var(--warn)">Process Files</h2>
+
+  <div class="drop-zone" id="fixZone" onclick="document.getElementById('fixInput').click()">
+    <input type="file" id="fixInput" accept=".csv,.xlsx" multiple />
+    <p><strong>Click or drag</strong> one or more raw CSV files, and/or an Excel file to repair</p>
+    <p style="margin-top:4px;font-size:0.78rem">Filename format: settled-txn-<strong>MERCHANTID</strong>-<strong>YYYY-MM-DD</strong>-to-<strong>YYYY-MM-DD</strong>.csv</p>
+  </div>
+  <div class="file-list" id="fixFileList"></div>
+  <div class="action-row" style="margin-top:16px">
+    <button class="btn-primary" id="fixBtn" onclick="runFixProcess()" disabled>Process & Download</button>
+    <button class="btn-secondary" onclick="clearFixAll()">✕ Clear All</button>
+    <span id="fixStatusText" style="color:var(--muted);font-size:0.85rem"></span>
+  </div>
+  <div class="progress-bar" id="fixProgressBar"><div class="fill" id="fixProgressFill"></div></div>
+  <div class="log" id="fixLog" style="display:none;margin-top:14px"></div>
+</div>
+
+<!-- Summary -->
+<div class="card" id="summaryCard" style="display:none">
+  <h2>Sheet Summary</h2>
+  <table id="summaryTable">
+    <thead><tr><th>Sheet</th><th>Rows Added</th><th>Total Rows</th></tr></thead>
+    <tbody id="summaryBody"></tbody>
+  </table>
+</div>
+
+<script>
+let selectedFiles = []; // File objects — mix of raw CSVs and workbooks to repair
+
+// ── Filename pattern: settled-txn-<merchantID>-<start>-to-<end>.csv ──
+const FNAME_RE = /^settled-txn-(\d+)-(\d{4}-\d{2}-\d{2})-to-(\d{4}-\d{2}-\d{2})\.csv$/i;
+
+// Auto-detects Daily / Weekly / Monthly straight from the date range in the
+// filename — no need to ask the user which category a file belongs to.
+function detectCategory(startStr, endStr) {
+  const s = new Date(startStr + 'T00:00:00Z');
+  const e = new Date(endStr + 'T00:00:00Z');
+  const days = Math.round((e - s) / 86400000) + 1;
+  const lastDayOfMonth = new Date(Date.UTC(e.getUTCFullYear(), e.getUTCMonth() + 1, 0)).getUTCDate();
+  if (days === 1) return 'Daily';
+  if (days === 7) return 'Weekly';
+  if (s.getUTCDate() === 1 && e.getUTCDate() === lastDayOfMonth &&
+      s.getUTCMonth() === e.getUTCMonth() && s.getUTCFullYear() === e.getUTCFullYear()) return 'Monthly';
+  return `Custom (${days}d)`;
+}
+
+// Columns that must stay numeric (everything else stays text so long
+// reference/ID numbers never lose precision or leading zeros)
+const NUMERIC_COLS = ['Txn Amount(RM)', 'MDR(RM)', 'Net Amount(RM)'];
+// Columns that hold a date (with or without time) needing DD-MMM-YYYY normalisation
+const DATE_COLS = ['Settlement Date', 'Transaction Time'];
+
+// ── Minimal RFC4180 CSV parser (keeps every field as a raw string) ──
+function parseCSV(text) {
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1); // strip BOM
+  const rows = [];
+  let row = [], field = '', inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (text[i + 1] === '"') { field += '"'; i++; }
+        else inQuotes = false;
+      } else field += c;
+    } else {
+      if (c === '"') inQuotes = true;
+      else if (c === ',') { row.push(field); field = ''; }
+      else if (c === '\r') { /* skip */ }
+      else if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
+      else field += c;
+    }
+  }
+  if (field.length > 0 || row.length > 0) { row.push(field); rows.push(row); }
+  if (rows.length && rows[rows.length - 1].length === 1 && rows[rows.length - 1][0] === '') rows.pop();
+  return rows;
+}
+
+function pad2(n) { return String(n).padStart(2, '0'); }
+
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+// Renders a resolved date as an unambiguous "DD-MMM-YYYY HH:MM:SS" text value.
+// A month name can never be misread as mm/dd by Excel, whatever the regional
+// settings — this is what makes a later Text-to-Columns safe.
+function toUnamb(d, mo, y, hh, mm, ss) {
+  return `${pad2(d)}-${MONTHS[mo - 1]}-${y} ${pad2(hh)}:${pad2(mm)}:${pad2(ss)}`;
+}
+
+// Parses "D/M/YYYY[ H:M:S]" or already "DD-MMM-YYYY[ H:M:S]" into parts.
+// Returns {d, mo, y, hh, mm, ss} (plus monthNamed=true when the source was a
+// month-name date, which is already unambiguous) or null.
+function parseDateTimeParts(s) {
+  let m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2}):(\d{2}))?$/);
+  if (m) return { d: +m[1], mo: +m[2], y: +m[3], hh: m[4] || '00', mm: m[5] || '00', ss: m[6] || '00' };
+  m = s.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{4})(?:\s+(\d{1,2}):(\d{2}):(\d{2}))?$/);
+  if (m) {
+    const mi = MONTHS.indexOf(m[2][0].toUpperCase() + m[2].slice(1).toLowerCase());
+    if (mi !== -1) return { d: +m[1], mo: mi + 1, y: +m[3], hh: m[4] || '00', mm: m[5] || '00', ss: m[6] || '00', monthNamed: true };
+  }
+  return null;
+}
+
+// Strips a matching pair of leading/trailing literal single-quote
+// characters some export tools embed to force text in Excel.
+function stripForcedQuote(v) {
+  if (typeof v !== 'string') return v;
+  if (v.length >= 2 && v.startsWith("'") && v.endsWith("'")) return v.slice(1, -1);
+  return v;
+}
+
+// ── Range-aware date disambiguation ─────────────────────────────
+// The filename itself states which period a file covers
+// (settled-txn-<id>-<start>-to-<end>.csv). That stated range is the only
+// reliable way to recover the true date when a value could be read two ways,
+// so we use it to decide whether day/month must be swapped.
+function expectedWindow(name) {
+  const m = String(name || '').match(/^settled-txn-(\d+)-(\d{4}-\d{2}-\d{2})-to-(\d{4}-\d{2}-\d{2})\.(?:csv|xlsx)$/i);
+  if (!m) return null;
+  return {
+    start: new Date(m[2] + 'T00:00:00Z'),
+    end: new Date(m[3] + 'T00:00:00Z'),
+    year: parseInt(m[2].slice(0, 4), 10),
+    month: parseInt(m[2].slice(5, 7), 10) - 1 // 0-based
+  };
+}
+
+function daysInMonth(year, mo0) {
+  return new Date(Date.UTC(year, mo0 + 1, 0)).getUTCDate();
+}
+
+// Given two candidate dd/mm interpretations for the same value, pick the
+// one that fits the file's stated date range. Returns {d, mo, note} where
+// note is 'ok' | 'swapped' | 'ambiguous' | 'invalid'.
+function pickDate(year, d1, mo1, d2, mo2, win) {
+  const valid = (d, mo) => mo >= 1 && mo <= 12 && d >= 1 && d <= daysInMonth(year, mo - 1);
+  if (d1 === d2 && mo1 === mo2) return { d: d1, mo: mo1, note: 'ok' };
+  const cands = [
+    { d: d1, mo: mo1, i: 0 },
+    { d: d2, mo: mo2, i: 1 }
+  ];
+  const v = cands.filter(c => valid(c.d, c.mo));
+  if (v.length === 0) return { d: d1, mo: mo1, note: 'invalid' };
+  if (v.length === 1) {
+    const c = v[0];
+    return { d: c.d, mo: c.mo, note: c.i === 1 ? 'swapped' : 'ok' };
+  }
+  const score = c => {
+    let s = 0;
+    if (c.mo - 1 === win.month && year === win.year) s += 1000;
+    const t = Date.UTC(year, c.mo - 1, c.d);
+    if (win && t >= win.start.getTime() && t <= win.end.getTime()) s += 500;
+    else if (win) {
+      const dist = Math.min(Math.abs(t - win.start.getTime()), Math.abs(t - win.end.getTime()));
+      s -= Math.min(dist / 86400000, 1000);
+    }
+    return s;
+  };
+  const [a, b] = v;
+  const sa = score(a), sb = score(b);
+  if (sa !== sb) {
+    const c = sa > sb ? a : b;
+    return { d: c.d, mo: c.mo, note: c.i === 1 ? 'swapped' : 'ok' };
+  }
+  return { d: d1, mo: mo1, note: 'ambiguous' };
+}
+
+// Normalises any supported date text to the unambiguous "DD-MMM-YYYY HH:MM:SS"
+// form, using the file's own stated range (when known) to resolve day/month
+// order. Returns {text, note}.
+function normalizeDateTimeSmart(raw, ctx, win, warnings) {
+  if (raw === undefined || raw === null || raw === '') return { text: '', note: 'ok' };
+  const s = String(raw).trim();
+  const parts = parseDateTimeParts(s);
+  if (!parts) {
+    warnings.push(`${ctx}: unrecognised date format "${s}" — left as-is`);
+    return { text: s, note: 'unrecognised' };
+  }
+  const { d, mo, y, hh, mm, ss } = parts;
+  if (parts.monthNamed) {
+    // Already unambiguous — re-render consistently and move on.
+    return { text: toUnamb(d, mo, y, hh, mm, ss), note: 'ok' };
+  }
+  const pick = win ? pickDate(y, d, mo, mo, d, win) : { d, mo, note: 'ok' };
+  if (pick.note === 'invalid') {
+    warnings.push(`${ctx}: invalid date "${s}" (day=${d}, month=${mo}) — left as-is, please check source`);
+    return { text: s, note: 'invalid' };
+  }
+  if (pick.note === 'ambiguous') {
+    warnings.push(`${ctx}: "${pad2(d)}/${pad2(mo)}" is genuinely ambiguous (${pad2(d)}/${pad2(mo)} vs ${pad2(mo)}/${pad2(d)} both fit) — left as-is, please check`);
+    return { text: toUnamb(d, mo, y, hh, mm, ss), note: 'ambiguous' };
+  }
+  if (pick.note === 'swapped') {
+    warnings.push(`${ctx}: "${pad2(d)}/${pad2(mo)}" doesn't fit the file's stated range — swapped to "${pad2(pick.d)}/${pad2(pick.mo)}"`);
+    return { text: toUnamb(pick.d, pick.mo, y, hh, mm, ss), note: 'swapped' };
+  }
+  return { text: toUnamb(pick.d, pick.mo, y, hh, mm, ss), note: 'ok' };
+}
+
+// ── Fixing dates in an already-produced Excel file ──────────────
+// Converts a real Excel date/time value (already resolved to a specific
+// calendar date — no more day/month ambiguity to swap) into strict
+// "DD-MMM-YYYY HH:MM:SS" text, reading components in UTC so the SheetJS
+// serial→Date conversion isn't shifted by the browser's local timezone.
+function excelDateToText(dateObj) {
+  const y = dateObj.getUTCFullYear();
+  const mo = dateObj.getUTCMonth() + 1;
+  const d = dateObj.getUTCDate();
+  const hh = dateObj.getUTCHours();
+  const mm = dateObj.getUTCMinutes();
+  const ss = dateObj.getUTCSeconds();
+  return `${pad2(d)}/${pad2(mo)}/${y} ${pad2(hh)}:${pad2(mm)}:${pad2(ss)}`;
+}
+
+// Excel stores dates as float day-numbers, which can drift by a few
+// milliseconds; round to the nearest second so "20:56:04" never comes back
+// as "20:56:03".
+function roundToSecond(dt) {
+  return new Date(Math.round(dt.getTime() / 1000) * 1000);
+}
+
+// ── File selection (multi-file) ─────────────────────────────────
+setupDrop('fixZone', files => {
+  const valid = files.filter(f => /\.(csv|xlsx)$/i.test(f.name));
+  if (valid.length) addFiles(valid);
+});
+document.getElementById('fixInput').addEventListener('change', e => {
+  if (e.target.files.length) addFiles([...e.target.files]);
+});
+
+function addFiles(files) {
+  files.forEach(f => { if (!selectedFiles.find(x => x.name === f.name)) selectedFiles.push(f); });
+  renderFixFileList();
+  document.getElementById('fixBtn').disabled = selectedFiles.length === 0;
+  const csvCount = selectedFiles.filter(f => /\.csv$/i.test(f.name)).length;
+  const xlsxCount = selectedFiles.filter(f => /\.xlsx$/i.test(f.name)).length;
+  document.getElementById('fixStatusText').textContent = selectedFiles.length
+    ? `${csvCount} raw CSV${csvCount === 1 ? '' : 's'}${xlsxCount ? `, ${xlsxCount} workbook${xlsxCount === 1 ? '' : 's'} to repair` : ''}`
+    : '';
+}
+
+function renderFixFileList() {
+  const el = document.getElementById('fixFileList');
+  el.innerHTML = '';
+  selectedFiles.forEach(f => {
+    const isCsv = /\.csv$/i.test(f.name);
+    const m = isCsv ? f.name.match(FNAME_RE) : null;
+    const pill = document.createElement('div');
+    pill.className = 'pill';
+    if (isCsv && m) {
+      const cat = detectCategory(m[2], m[3]);
+      pill.innerHTML = `<span class="dot"></span>Merchant ${m[1]} · <strong>${cat}</strong> · ${m[2]} → ${m[3]}`;
+    } else if (isCsv) {
+      pill.innerHTML = `<span class="dot warn"></span>${f.name} <span style="color:var(--warn)">(name unrecognised — will be skipped)</span>`;
+    } else {
+      pill.innerHTML = `<span class="dot"></span>${f.name} <span style="color:var(--muted)">(workbook to repair)</span>`;
+    }
+    el.appendChild(pill);
+  });
+}
+
+function clearFixAll() {
+  selectedFiles = [];
+  document.getElementById('fixFileList').innerHTML = '';
+  document.getElementById('fixInput').value = '';
+  document.getElementById('fixBtn').disabled = true;
+  document.getElementById('fixStatusText').textContent = '';
+  document.getElementById('fixLog').innerHTML = '';
+  document.getElementById('fixLog').style.display = 'none';
+  document.getElementById('fixProgressBar').style.display = 'none';
+  document.getElementById('fixProgressFill').style.width = '0%';
+  document.getElementById('summaryCard').style.display = 'none';
+}
+
+function fixLog(type, msg) {
+  const el = document.getElementById('fixLog');
+  el.style.display = 'block';
+  const line = document.createElement('span');
+  line.className = `line ${type}`;
+  line.textContent = msg;
+  el.appendChild(line);
+  el.appendChild(document.createElement('br'));
+  el.scrollTop = el.scrollHeight;
+}
+
+function readFileText(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = e => res(e.target.result);
+    r.onerror = rej;
+    r.readAsText(file);
+  });
+}
+
+// Repairs the date columns of an already-loaded workbook in place, using
+// the given filename-derived window (if any) to resolve mis-read dates.
+// Returns totals and logs each change/warning via the given logger.
+function repairWorkbookDates(wb, win, logFn) {
+  let totalFixed = 0, totalOk = 0, totalAmbiguous = 0, totalUnrecognized = 0;
+
+  wb.SheetNames.forEach(sheetName => {
+    const ws = wb.Sheets[sheetName];
+    if (!ws['!ref']) return;
+    const range = XLSX.utils.decode_range(ws['!ref']);
+
+    const dateCols = [];
+    for (let c = range.s.c; c <= range.e.c; c++) {
+      const headerCell = ws[XLSX.utils.encode_cell({ r: range.s.r, c })];
+      if (headerCell && DATE_COLS.includes(headerCell.v)) dateCols.push(c);
+    }
+    if (dateCols.length === 0) {
+      logFn('info', `Sheet "${sheetName}": no Settlement Date / Transaction Time columns found — skipped`);
+      return;
+    }
+
+    let sheetFixed = 0, sheetOk = 0, sheetAmbiguous = 0, sheetUnrecognized = 0;
+    for (let r = range.s.r + 1; r <= range.e.r; r++) {
+      dateCols.forEach(c => {
+        const ref = XLSX.utils.encode_cell({ r, c });
+        const cell = ws[ref];
+        if (!cell || cell.v === undefined || cell.v === '') return;
+
+        if (cell.t === 'd' || cell.v instanceof Date) {
+          const dt = roundToSecond(cell.v);
+          const y = dt.getUTCFullYear();
+          const excelMo = dt.getUTCMonth() + 1;
+          const excelD = dt.getUTCDate();
+          const hh = dt.getUTCHours(), mm = dt.getUTCMinutes(), ss = dt.getUTCSeconds();
+          const pick = win ? pickDate(y, excelD, excelMo, excelMo, excelD, win) : { d: excelD, mo: excelMo, note: 'ok' };
+          const text = toUnamb(pick.d, pick.mo, y, hh, mm, ss);
+          ws[ref] = { t: 's', v: text };
+          if (pick.note === 'swapped') {
+            sheetFixed++;
+            logFn('ok', `  ✓ ${sheetName}!${ref}: "${excelDateToText(dt)}" → "${text}" (swapped to match filename)`);
+          } else if (pick.note === 'ambiguous') {
+            sheetAmbiguous++;
+            logFn('warn', `  ⚠ ${sheetName}!${ref}: "${excelDateToText(dt)}" is genuinely ambiguous — left as-is, please check`);
+          } else if (pick.note === 'invalid') {
+            sheetAmbiguous++;
+            logFn('warn', `  ⚠ ${sheetName}!${ref}: "${excelDateToText(dt)}" is invalid — left as-is, please check`);
+          } else {
+            sheetOk++;
+          }
+        } else if (cell.t === 's') {
+          const before = cell.v;
+          const warnings = [];
+          const res = normalizeDateTimeSmart(before, `${sheetName}!${ref}`, win, warnings);
+          if (res.note === 'unrecognised') {
+            sheetUnrecognized++;
+            logFn('warn', `  ⚠ ${warnings[0]}`);
+          } else if (res.note === 'invalid' || res.note === 'ambiguous') {
+            sheetAmbiguous++;
+            logFn('warn', `  ⚠ ${warnings[0]}`);
+          } else if (res.note === 'swapped') {
+            sheetFixed++;
+            logFn('ok', `  ✓ ${sheetName}!${ref}: "${before}" → "${res.text}"`);
+          } else if (res.text !== before) {
+            sheetFixed++;
+            logFn('ok', `  ✓ ${sheetName}!${ref}: "${before}" → "${res.text}"`);
+          } else {
+            sheetOk++;
+          }
+          ws[ref] = { t: 's', v: res.text };
+        } else {
+          sheetUnrecognized++;
+          logFn('warn', `  ⚠ ${sheetName}!${ref}: unexpected value "${cell.v}" in a date column — left as-is`);
+        }
+      });
+    }
+
+    logFn('head', `── ${sheetName}: ${sheetFixed} fixed, ${sheetOk} already correct, ${sheetAmbiguous} ambiguous, ${sheetUnrecognized} unrecognised ──`);
+    totalFixed += sheetFixed; totalOk += sheetOk; totalAmbiguous += sheetAmbiguous; totalUnrecognized += sheetUnrecognized;
+  });
+
+  return { totalFixed, totalOk, totalAmbiguous, totalUnrecognized };
+}
+
+// ── Main process: everything dropped in gets handled in one pass ────────
+async function runFixProcess() {
+  if (!selectedFiles.length) return;
+  document.getElementById('fixBtn').disabled = true;
+  document.getElementById('fixLog').innerHTML = '';
+  document.getElementById('fixLog').style.display = 'block';
+  document.getElementById('summaryCard').style.display = 'none';
+  const pb = document.getElementById('fixProgressBar');
+  const fill = document.getElementById('fixProgressFill');
+  pb.style.display = 'block';
+  fill.style.width = '0%';
+
+  const csvEntries = selectedFiles
+    .filter(f => /\.csv$/i.test(f.name))
+    .map(f => ({ f, m: f.name.match(FNAME_RE) }))
+    .filter(x => {
+      if (!x.m) fixLog('warn', `Skipped (name doesn't match settled-txn-<id>-<start>-to-<end>.csv): ${x.f.name}`);
+      return !!x.m;
+    });
+  csvEntries.sort((a, b) => (a.m[1] + a.m[2]).localeCompare(b.m[1] + b.m[2]));
+
+  const xlsxFiles = selectedFiles.filter(f => /\.xlsx$/i.test(f.name));
+  const totalSteps = Math.max(csvEntries.length + xlsxFiles.length, 1);
+  let doneSteps = 0;
+
+  // ── Combine every raw CSV into one workbook, one sheet per merchant ──
+  if (csvEntries.length) {
+    fixLog('head', `── Processing ${csvEntries.length} raw CSV file(s) ──`);
+    const workbook = XLSX.utils.book_new();
+    const added = {};
+    const dupKeysBySheet = {};
+    const allWarnings = [];
+
+    for (const { f, m } of csvEntries) {
+      const merchantId = m[1];
+      const sheetName = merchantId;
+      const category = detectCategory(m[2], m[3]);
+      const win = expectedWindow(f.name);
+      fixLog('info', `${f.name} — detected as ${category} (${m[2]} → ${m[3]})`);
+
+      const text = await readFileText(f);
+      const rows = parseCSV(text);
+      if (rows.length < 2) { fixLog('warn', `Empty CSV: ${f.name}`); doneSteps++; continue; }
+
+      const headers = rows[0];
+      const dataRows = rows.slice(1).filter(r => r.length > 1 || (r[0] !== undefined && r[0] !== ''));
+      const numericIdx = headers.map(h => NUMERIC_COLS.includes(h));
+      const dateIdx = headers.map(h => DATE_COLS.includes(h));
+      const gwCol = headers.indexOf('Gateway Txn ID');
+      const ttCol = headers.indexOf('Transaction Time');
+
+      // Create the sheet the first time we see this merchant ID
+      if (!workbook.SheetNames.includes(sheetName)) {
+        const ws = {};
+        headers.forEach((h, c) => { ws[XLSX.utils.encode_cell({ r: 0, c })] = { t: 's', v: h ?? '' }; });
+        ws['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: 0, c: headers.length - 1 } });
+        XLSX.utils.book_append_sheet(workbook, ws, sheetName);
+        added[sheetName] = 0;
+        fixLog('ok', `Created sheet: ${sheetName} (${headers.length} columns)`);
+      }
+
+      const ws = workbook.Sheets[sheetName];
+      const existing = XLSX.utils.sheet_to_json(ws, { header: 1 });
+      let nextRow = existing.length + 1; // 1-based
+
+      // Build the duplicate-key lookup for this sheet once, from whatever
+      // rows already exist (prior files this run)
+      if (!dupKeysBySheet[sheetName] && gwCol !== -1 && ttCol !== -1) {
+        const set = new Set();
+        for (let r = 1; r < existing.length; r++) {
+          const row = existing[r];
+          if (!row) continue;
+          set.add(`${row[gwCol] ?? ''}|${row[ttCol] ?? ''}`);
+        }
+        dupKeysBySheet[sheetName] = set;
+      }
+      const dupKeys = dupKeysBySheet[sheetName];
+
+      const fileWarnings = [];
+      let dupCount = 0;
+      dataRows.forEach((row, rIdx) => {
+        let normGw = null, normTt = null;
+        for (let c = 0; c < headers.length; c++) {
+          const ref = XLSX.utils.encode_cell({ r: nextRow - 1, c });
+          let val = row[c] !== undefined ? row[c] : '';
+
+          if (dateIdx[c]) {
+            const ctx = `${f.name} row ${rIdx + 2} (${headers[c]})`;
+            const res = normalizeDateTimeSmart(val, ctx, win, fileWarnings);
+            ws[ref] = { t: 's', v: res.text };
+            if (c === ttCol) normTt = res.text;
+          } else if (numericIdx[c]) {
+            const trimmed = String(val).trim();
+            const num = parseFloat(trimmed);
+            ws[ref] = (trimmed === '' || isNaN(num))
+              ? { t: 's', v: val }
+              : { t: 'n', v: num };
+          } else {
+            const cleaned = stripForcedQuote(String(val));
+            ws[ref] = { t: 's', v: cleaned };
+            if (c === gwCol) normGw = cleaned;
+          }
+        }
+
+        // Flag (never silently drop) possible duplicate transactions — real
+        // risk when daily/weekly/monthly exports overlap the same days
+        if (dupKeys && normGw !== null && normTt !== null) {
+          const key = `${normGw}|${normTt}`;
+          if (dupKeys.has(key)) {
+            dupCount++;
+            if (dupCount <= 5) fileWarnings.push(`row ${rIdx + 2}: possible duplicate — Gateway Txn ID ${normGw} at ${normTt} already exists in sheet ${sheetName}`);
+          } else {
+            dupKeys.add(key);
+          }
+        }
+
+        nextRow++;
+      });
+      if (dupCount > 5) fileWarnings.push(`…and ${dupCount - 5} more possible duplicates in this file`);
+
+      if (fileWarnings.length) {
+        fixLog('warn', `⚠ ${fileWarnings.length} issue(s) in ${f.name}:`);
+        fileWarnings.slice(0, 15).forEach(w => fixLog('warn', '   ' + w));
+        if (fileWarnings.length > 15) fixLog('warn', `   …and ${fileWarnings.length - 15} more`);
+        allWarnings.push(...fileWarnings);
+      }
+      if (dupCount) {
+        fixLog('warn', `⚠ ${dupCount} row(s) in ${f.name} share a Gateway Txn ID + Transaction Time with rows already in sheet ${sheetName} — rows were still added, please review for double-counting.`);
+      }
+
+      // Force text format on the date columns so Excel never re-interprets them
+      ws['!cols'] = ws['!cols'] || [];
+      dateIdx.forEach((isDate, c) => {
+        if (isDate) { ws['!cols'][c] = ws['!cols'][c] || {}; ws['!cols'][c].wch = 20; }
+      });
+
+      const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+      range.e.r = Math.max(range.e.r, nextRow - 2);
+      range.e.c = Math.max(range.e.c, headers.length - 1);
+      ws['!ref'] = XLSX.utils.encode_range(range);
+
+      added[sheetName] = (added[sheetName] || 0) + dataRows.length;
+      fixLog('ok', `✓ ${f.name}  →  sheet ${sheetName}  +${dataRows.length.toLocaleString()} rows`);
+
+      doneSteps++;
+      fill.style.width = `${Math.round((doneSteps / totalSteps) * 100)}%`;
+      await new Promise(r => setTimeout(r, 0));
+    }
+
+    // Build summary
+    const tbody = document.getElementById('summaryBody');
+    tbody.innerHTML = '';
+    let hasAny = false;
+    workbook.SheetNames.forEach(s => {
+      const ws = workbook.Sheets[s];
+      const total = ws['!ref'] ? XLSX.utils.decode_range(ws['!ref']).e.r : 0;
+      const a = added[s] || 0;
+      if (a > 0) hasAny = true;
+      tbody.innerHTML += `<tr>
+        <td><span class="badge">${s}</span></td>
+        <td style="color:var(--accent2)">+${a.toLocaleString()}</td>
+        <td>${total.toLocaleString()}</td>
+      </tr>`;
+    });
+    if (hasAny) document.getElementById('summaryCard').style.display = 'block';
+
+    const starts = csvEntries.map(x => x.m[2]).sort();
+    const ends = csvEntries.map(x => x.m[3]).sort();
+    const outName = `Settled_Transactions_${starts[0]}_to_${ends[ends.length - 1]}.xlsx`;
+
+    if (allWarnings.length) {
+      fixLog('warn', `⚠ Total date issues flagged this run: ${allWarnings.length} — please double-check the rows above before relying on the dates.`);
+    } else {
+      fixLog('ok', `All Settlement Date / Transaction Time values parsed cleanly as DD-MMM-YYYY.`);
+    }
+    XLSX.writeFile(workbook, outName);
+    fixLog('ok', `Download started: ${outName}`);
+  }
+
+  // ── Repair any already-produced workbooks, one download each ──
+  for (const file of xlsxFiles) {
+    fixLog('head', `── Repairing workbook: ${file.name} ──`);
+    const win = expectedWindow(file.name);
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(new Uint8Array(buf), { type: 'array', cellDates: true });
+    const stats = repairWorkbookDates(wb, win, fixLog);
+
+    fixLog('head', `── Done: ${stats.totalFixed} cells fixed, ${stats.totalOk} already correct, ${stats.totalAmbiguous} ambiguous, ${stats.totalUnrecognized} unrecognised ──`);
+    if (stats.totalAmbiguous || stats.totalUnrecognized) {
+      fixLog('warn', `⚠ ${stats.totalAmbiguous + stats.totalUnrecognized} cell(s) need a manual look — search the log above for "⚠".`);
+    }
+
+    const outName = file.name.replace(/\.xlsx$/i, '') + '_dates_fixed.xlsx';
+    XLSX.writeFile(wb, outName);
+    fixLog('ok', `Download started: ${outName}`);
+
+    doneSteps++;
+    fill.style.width = `${Math.round((doneSteps / totalSteps) * 100)}%`;
+  }
+
+  fill.style.width = '100%';
+  document.getElementById('fixBtn').disabled = false;
+}
+
+// ── Drag & drop helper ───────────────────────────────────────────
+function setupDrop(zoneId, handler) {
+  const z = document.getElementById(zoneId);
+  z.addEventListener('dragover', e => { e.preventDefault(); z.classList.add('over'); });
+  z.addEventListener('dragleave', () => z.classList.remove('over'));
+  z.addEventListener('drop', e => {
+    e.preventDefault(); z.classList.remove('over');
+    handler([...e.dataTransfer.files]);
+  });
+}
+</script>
+</body>
+</html>
